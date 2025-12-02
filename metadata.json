@@ -1,0 +1,5 @@
+{
+  "name": "Steps & Leaps",
+  "description": "A digital math board game where players race to 100 by taking small steps with dice and giant leaps with a spinner. Features AI-powered math facts.",
+  "requestFramePermissions": []
+}
