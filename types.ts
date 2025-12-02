@@ -13,6 +13,11 @@ export enum GamePhase {
   GAME_OVER = 'GAME_OVER',
 }
 
+export enum Difficulty {
+  EASY = 'EASY',
+  HARD = 'HARD',
+}
+
 export interface Player {
   id: PlayerId;
   name: string;
@@ -29,4 +34,5 @@ export interface GameState {
   spinValue: number; // 0, 10, 20, 30
   winner: PlayerId | null;
   logs: string[];
+  difficulty: Difficulty;
 }

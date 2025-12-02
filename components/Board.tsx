@@ -1,6 +1,14 @@
 import React from 'react';
 import { Player, PlayerId } from '../types';
-import { ArrowRight, ArrowLeft, ArrowUp, Star, Cloud, Sun, Flower, Ghost, GripHorizontal } from 'lucide-react';
+import { 
+  ArrowRight, ArrowLeft, ArrowUp, 
+  GripHorizontal, Ghost,
+  Flower, TreePine, 
+  Sun, Umbrella, 
+  Fish, Waves, 
+  Mountain, Snowflake, 
+  Star, Moon, Rocket
+} from 'lucide-react';
 import { AvatarIcon } from './AvatarIcon';
 
 interface SpecialMove {
@@ -12,26 +20,33 @@ interface SpecialMove {
 interface BoardProps {
   players: Record<PlayerId, Player>;
   specialMoves: SpecialMove[];
+  maxScore: number;
 }
 
-export const Board: React.FC<BoardProps> = ({ players, specialMoves }) => {
+export const Board: React.FC<BoardProps> = ({ players, specialMoves, maxScore }) => {
   const gridCells = [];
+  const rows = Math.ceil(maxScore / 10);
   
-  for (let row = 0; row < 10; row++) {
-    const mathRow = 9 - row;
+  for (let row = 0; row < rows; row++) {
+    const mathRow = (rows - 1) - row; // 0 is bottom
     const isLTR = mathRow % 2 === 0;
 
     const rowNumbers = [];
     const startNum = mathRow * 10 + 1;
     
     for (let i = 0; i < 10; i++) {
-      rowNumbers.push(startNum + i);
+      const num = startNum + i;
+      if (num <= maxScore) {
+        rowNumbers.push(num);
+      }
     }
     
     if (!isLTR) {
       rowNumbers.reverse();
     }
     
+    // Fill remaining spots in top row if board isn't perfect rectangle (unlikely with steps of 10)
+    // but good practice.
     gridCells.push(...rowNumbers);
   }
 
@@ -39,57 +54,103 @@ export const Board: React.FC<BoardProps> = ({ players, specialMoves }) => {
     return Object.values(players).filter(p => p.position === n);
   };
 
-  // Helper for background colors/decorations
+  // --- THEMATIC ZONES ---
+  const getZone = (num: number) => {
+    const percentage = num / maxScore;
+    if (percentage <= 0.2) return 'meadow';
+    if (percentage <= 0.4) return 'desert';
+    if (percentage <= 0.6) return 'ocean';
+    if (percentage <= 0.8) return 'mountain';
+    return 'space';
+  };
+
   const getCellStyles = (num: number) => {
-    // Pastel palette
-    const colors = [
-      'bg-red-50', 'bg-orange-50', 'bg-amber-50', 'bg-yellow-50', 
-      'bg-lime-50', 'bg-green-50', 'bg-emerald-50', 'bg-teal-50', 
-      'bg-cyan-50', 'bg-sky-50', 'bg-blue-50', 'bg-indigo-50', 
-      'bg-violet-50', 'bg-purple-50', 'bg-fuchsia-50', 'bg-pink-50', 'bg-rose-50'
-    ];
-    // deterministically pick a color based on number
-    const colorClass = colors[num % colors.length];
-    return colorClass;
+    const zone = getZone(num);
+    const isEven = num % 2 === 0;
+
+    switch (zone) {
+      case 'meadow':
+        return isEven ? 'bg-green-100 border-green-200' : 'bg-emerald-100 border-emerald-200';
+      case 'desert':
+        return isEven ? 'bg-amber-100 border-amber-200' : 'bg-orange-100 border-orange-200';
+      case 'ocean':
+        return isEven ? 'bg-cyan-100 border-cyan-200' : 'bg-sky-100 border-sky-200';
+      case 'mountain':
+        return isEven ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-100 border-slate-200';
+      case 'space':
+        return isEven ? 'bg-violet-200 border-violet-300' : 'bg-indigo-200 border-indigo-300';
+      default:
+        return 'bg-white';
+    }
   };
   
   const getDecoration = (num: number) => {
       // Check for special moves first
       const special = specialMoves.find(m => m.start === num);
       if (special) {
-        if (special.type === 'monster') return <Ghost className="w-5 h-5 text-red-400 absolute top-1 right-1 animate-pulse" />;
-        if (special.type === 'ladder') return <GripHorizontal className="w-5 h-5 text-green-600 absolute bottom-1 right-1 -rotate-45" />;
+        if (special.type === 'monster') return <Ghost className="w-5 h-5 text-red-500 absolute top-1 right-1 animate-pulse drop-shadow-sm" />;
+        if (special.type === 'ladder') return <GripHorizontal className="w-5 h-5 text-green-700 absolute bottom-1 right-1 -rotate-45 drop-shadow-sm" />;
       }
 
-      // Randomly place cute icons on some tiles
-      if (num % 13 === 0) return <Star className="w-3 h-3 text-yellow-300 absolute top-1 right-1 opacity-60" />;
-      if (num % 17 === 0) return <Cloud className="w-3 h-3 text-sky-200 absolute top-1 right-1 opacity-60" />;
-      if (num % 19 === 0) return <Flower className="w-3 h-3 text-pink-300 absolute bottom-1 left-1 opacity-60" />;
-      if (num % 23 === 0) return <Sun className="w-3 h-3 text-orange-200 absolute top-1 left-1 opacity-60" />;
+      const zone = getZone(num);
+      const rand = (num * 123) % 100; // Deterministic randomish
+
+      // Decorations based on zones
+      switch (zone) {
+        case 'meadow':
+          if (rand < 20) return <Flower className="w-3 h-3 text-pink-400 absolute bottom-1 left-1 opacity-70" />;
+          if (rand > 80) return <TreePine className="w-3 h-3 text-green-600 absolute top-1 right-1 opacity-60" />;
+          break;
+        case 'desert':
+          if (rand < 20) return <Sun className="w-3 h-3 text-orange-400 absolute top-1 left-1 opacity-70" />;
+          if (rand > 80) return <Umbrella className="w-3 h-3 text-red-400 absolute bottom-1 right-1 opacity-60" />;
+          break;
+        case 'ocean':
+          if (rand < 20) return <Fish className="w-3 h-3 text-blue-600 absolute bottom-1 left-1 opacity-60" />;
+          if (rand > 80) return <Waves className="w-3 h-3 text-cyan-600 absolute top-1 right-1 opacity-60" />;
+          break;
+        case 'mountain':
+          if (rand < 20) return <Mountain className="w-3 h-3 text-slate-400 absolute bottom-1 left-1 opacity-60" />;
+          if (rand > 80) return <Snowflake className="w-3 h-3 text-blue-300 absolute top-1 right-1 opacity-70" />;
+          break;
+        case 'space':
+          if (rand < 20) return <Star className="w-3 h-3 text-yellow-200 absolute top-1 right-1 opacity-80" />;
+          if (rand > 80) return <Moon className="w-3 h-3 text-slate-200 absolute bottom-1 left-1 opacity-60" />;
+          if (num === maxScore - 1) return <Rocket className="w-4 h-4 text-red-500 absolute top-1 left-1" />;
+          break;
+      }
       return null;
   };
 
   const getTileCenter = (num: number) => {
+    // Math row: 0 is 1-10, 1 is 11-20
     const mathRow = Math.floor((num - 1) / 10);
     const isLTR = mathRow % 2 === 0;
     const colIndex = (num - 1) % 10;
     
     // Calculate visual row (0 at top)
-    const visualRow = 9 - mathRow;
+    const visualRow = (rows - 1) - mathRow;
     
     // Calculate visual col (0 at left)
     const visualCol = isLTR ? colIndex : 9 - colIndex;
 
     // Return percentage (center of tile)
+    // Vertical percentage depends on number of rows.
+    // Each row is 100/rows percent high.
+    const rowHeight = 100 / rows;
+    
     return {
       x: visualCol * 10 + 5,
-      y: visualRow * 10 + 5
+      y: visualRow * rowHeight + (rowHeight / 2)
     };
   };
 
   return (
-    <div className="relative p-2 sm:p-4 bg-white/50 backdrop-blur-sm rounded-3xl border-4 border-white shadow-xl">
+    <div className="relative p-2 sm:p-4 rounded-3xl border-4 border-white/50 shadow-2xl bg-gradient-to-t from-green-200 via-sky-200 to-indigo-900 overflow-hidden">
       
+      {/* Background Ambience */}
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 pointer-events-none"></div>
+
       {/* SVG Overlay for Ladders and Monsters */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" style={{ padding: 'inherit' }}>
         {specialMoves.map((move, i) => {
@@ -99,22 +160,41 @@ export const Board: React.FC<BoardProps> = ({ players, specialMoves }) => {
           if (move.type === 'ladder') {
             return (
               <g key={`ladder-${i}`}>
-                {/* Main Ladder Lines */}
-                <line x1={`${start.x}%`} y1={`${start.y}%`} x2={`${end.x}%`} y2={`${end.y}%`} stroke="#22c55e" strokeWidth="8" strokeOpacity="0.4" strokeLinecap="round" />
-                <line x1={`${start.x}%`} y1={`${start.y}%`} x2={`${end.x}%`} y2={`${end.y}%`} stroke="#22c55e" strokeWidth="2" strokeDasharray="4 4" strokeLinecap="round" />
+                {/* Shadow */}
+                <line x1={`${start.x}%`} y1={`${start.y}%`} x2={`${end.x}%`} y2={`${end.y}%`} stroke="rgba(0,0,0,0.1)" strokeWidth="8" strokeLinecap="round" transform="translate(2,2)" />
+                {/* Rails */}
+                <line x1={`${start.x}%`} y1={`${start.y}%`} x2={`${end.x}%`} y2={`${end.y}%`} stroke="#16a34a" strokeWidth="6" strokeLinecap="round" />
+                {/* Rungs effect (dashed line) */}
+                <line x1={`${start.x}%`} y1={`${start.y}%`} x2={`${end.x}%`} y2={`${end.y}%`} stroke="#86efac" strokeWidth="3" strokeDasharray="2 6" strokeLinecap="round" />
               </g>
             );
           } else {
              return (
               <g key={`monster-${i}`}>
-                {/* Monster Slide Line */}
+                 {/* Shadow */}
+                 <path 
+                  d={`M ${start.x}% ${start.y}% Q ${(start.x + end.x)/2 + 5}% ${(start.y + end.y)/2}% ${end.x}% ${end.y}%`}
+                  fill="none"
+                  stroke="rgba(0,0,0,0.1)"
+                  strokeWidth="5"
+                  transform="translate(2,2)"
+                />
+                {/* Monster Slide Body */}
                 <path 
                   d={`M ${start.x}% ${start.y}% Q ${(start.x + end.x)/2 + 5}% ${(start.y + end.y)/2}% ${end.x}% ${end.y}%`}
                   fill="none"
                   stroke="#ef4444"
-                  strokeWidth="4"
-                  strokeOpacity="0.3"
-                  strokeDasharray="5, 5"
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                />
+                {/* Stripe pattern */}
+                <path 
+                  d={`M ${start.x}% ${start.y}% Q ${(start.x + end.x)/2 + 5}% ${(start.y + end.y)/2}% ${end.x}% ${end.y}%`}
+                  fill="none"
+                  stroke="#fee2e2"
+                  strokeWidth="2"
+                  strokeDasharray="4 4"
+                  strokeLinecap="round"
                 />
               </g>
              );
@@ -126,21 +206,22 @@ export const Board: React.FC<BoardProps> = ({ players, specialMoves }) => {
         {gridCells.map((num, index) => {
           const occupants = getPlayerInCell(num);
           const isStart = num === 1;
-          const isEnd = num === 100;
+          const isEnd = num === maxScore;
           
           const mathRow = Math.floor((num - 1) / 10);
           const isLTR = mathRow % 2 === 0;
           
           let ArrowIcon = null;
-          if (num < 100) {
+          if (num < maxScore) {
+             const arrowClass = "w-3 h-3 text-slate-400/50";
              if (isLTR) {
-                if (num % 10 === 0) ArrowIcon = <ArrowUp className="w-4 h-4 text-slate-300/70" />;
-                else ArrowIcon = <ArrowRight className="w-4 h-4 text-slate-300/70" />;
+                if (num % 10 === 0) ArrowIcon = <ArrowUp className={arrowClass} />;
+                else ArrowIcon = <ArrowRight className={arrowClass} />;
              } else {
                 if (num % 10 === 0) {
-                    ArrowIcon = <ArrowUp className="w-4 h-4 text-slate-300/70" />;
+                    ArrowIcon = <ArrowUp className={arrowClass} />;
                 } else {
-                    ArrowIcon = <ArrowLeft className="w-4 h-4 text-slate-300/70" />;
+                    ArrowIcon = <ArrowLeft className={arrowClass} />;
                 }
              }
           }
@@ -150,43 +231,43 @@ export const Board: React.FC<BoardProps> = ({ players, specialMoves }) => {
           return (
             <div
               key={num}
-              className={`aspect-square flex flex-col items-center justify-center relative rounded-2xl text-xs sm:text-sm font-bold transition-all duration-300 shadow-[0_2px_0_0_rgba(0,0,0,0.05)]
-                ${isStart ? 'bg-gradient-to-br from-green-100 to-green-200 ring-2 ring-green-300 z-10 scale-105 shadow-md' : ''}
-                ${isEnd ? 'bg-gradient-to-br from-yellow-100 to-yellow-200 ring-2 ring-yellow-300 z-10 scale-105 shadow-md' : ''}
-                ${!isStart && !isEnd ? `${cellColor} border-2 border-white` : ''}
-                ${occupants.length > 0 ? 'ring-4 ring-indigo-200 z-20 shadow-lg scale-110' : ''}
+              className={`aspect-square flex flex-col items-center justify-center relative rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 shadow-[0_3px_0_0_rgba(0,0,0,0.1)]
+                ${isStart ? 'bg-gradient-to-br from-yellow-300 to-orange-400 ring-4 ring-white z-10 scale-105 shadow-lg' : ''}
+                ${isEnd ? 'bg-gradient-to-br from-fuchsia-400 to-purple-600 ring-4 ring-yellow-300 z-10 scale-110 shadow-xl' : ''}
+                ${!isStart && !isEnd ? `${cellColor} border-b-4` : ''}
+                ${occupants.length > 0 ? 'ring-4 ring-white z-20 shadow-2xl scale-110' : ''}
               `}
             >
-              <span className={`select-none ${isStart || isEnd ? 'text-slate-800 text-base' : 'text-slate-400'}`}>{num}</span>
+              <span className={`select-none z-10 ${isStart ? 'text-white text-lg drop-shadow-md' : isEnd ? 'text-white text-xl drop-shadow-md' : 'text-slate-600/80'}`}>{num}</span>
               
               {/* Decorations */}
               {!isStart && !isEnd && getDecoration(num)}
 
               {/* Path Arrows */}
               {!isStart && !isEnd && (
-                 <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 sm:opacity-50 pointer-events-none">
-                    {ArrowIcon}
+                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="transform translate-y-3">{ArrowIcon}</div>
                  </div>
               )}
 
               {/* Players */}
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center z-30">
                  <div className="flex -space-x-3 transition-all duration-500">
                   {occupants.map((p) => (
                     <div
                       key={p.id}
-                      className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full border-2 border-white shadow-lg flex items-center justify-center transform transition-transform duration-300 hover:scale-125 hover:z-50`}
-                      style={{ backgroundColor: p.color }}
+                      className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full border-2 border-white shadow-lg flex items-center justify-center transform transition-transform duration-300 hover:scale-125 hover:z-50 bg-white`}
                       title={p.name}
                     >
-                      <AvatarIcon type={p.avatar} className="w-5 h-5 sm:w-6 sm:h-6" />
+                      <AvatarIcon type={p.avatar} className="w-full h-full p-1" />
+                      <div className="absolute inset-0 rounded-full border-2 opacity-50" style={{ borderColor: p.color }}></div>
                     </div>
                   ))}
                 </div>
               </div>
               
-              {isEnd && <div className="absolute -top-3 -right-3 text-2xl drop-shadow-sm filter">👑</div>}
-              {isStart && <div className="absolute -top-2 -left-2 text-xl drop-shadow-sm filter">🏠</div>}
+              {isEnd && <div className="absolute -top-4 -right-3 text-3xl drop-shadow-md filter animate-bounce">👑</div>}
+              {isStart && <div className="absolute -top-3 -left-2 text-2xl drop-shadow-md filter">🏡</div>}
             </div>
           );
         })}

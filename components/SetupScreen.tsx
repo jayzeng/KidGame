@@ -1,42 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { AvatarIcon, AvatarType } from './AvatarIcon';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Brain, Sparkles } from 'lucide-react';
+import { Difficulty } from '../types';
 
 interface SetupScreenProps {
-  onStartGame: (p1Name: string, p1Avatar: string, p2Name: string, p2Avatar: string) => void;
+  onStartGame: (p1Name: string, p1Avatar: string, p2Name: string, p2Avatar: string, difficulty: Difficulty) => void;
 }
 
 const AVATAR_OPTIONS: AvatarType[] = ['axolotl', 'cat', 'dog', 'bunny', 'frog', 'panda'];
 
 export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
-  const [p1Name, setP1Name] = useState('Player 1');
-  const [p1Avatar, setP1Avatar] = useState<AvatarType>('axolotl');
+  // Use lazy initialization to read from localStorage reliably on first render
+  const [p1Name, setP1Name] = useState(() => localStorage.getItem('sl_p1_name') || 'Player 1');
+  const [p1Avatar, setP1Avatar] = useState<AvatarType>(() => {
+    const saved = localStorage.getItem('sl_p1_avatar');
+    return (saved && AVATAR_OPTIONS.includes(saved as AvatarType)) ? (saved as AvatarType) : 'axolotl';
+  });
   
-  const [p2Name, setP2Name] = useState('Player 2');
-  const [p2Avatar, setP2Avatar] = useState<AvatarType>('cat');
+  const [p2Name, setP2Name] = useState(() => localStorage.getItem('sl_p2_name') || 'Player 2');
+  const [p2Avatar, setP2Avatar] = useState<AvatarType>(() => {
+    const saved = localStorage.getItem('sl_p2_avatar');
+    return (saved && AVATAR_OPTIONS.includes(saved as AvatarType)) ? (saved as AvatarType) : 'cat';
+  });
 
+  const [difficulty, setDifficulty] = useState<Difficulty>(() => {
+    const saved = localStorage.getItem('sl_difficulty');
+    return (saved === Difficulty.HARD) ? Difficulty.HARD : Difficulty.EASY;
+  });
+
+  // Auto-save to localStorage whenever values change (real-time persistence)
   useEffect(() => {
-    const savedP1Name = localStorage.getItem('sl_p1_name');
-    const savedP1Avatar = localStorage.getItem('sl_p1_avatar') as AvatarType;
-    const savedP2Name = localStorage.getItem('sl_p2_name');
-    const savedP2Avatar = localStorage.getItem('sl_p2_avatar') as AvatarType;
-
-    if (savedP1Name) setP1Name(savedP1Name);
-    if (savedP1Avatar && AVATAR_OPTIONS.includes(savedP1Avatar)) setP1Avatar(savedP1Avatar);
-    if (savedP2Name) setP2Name(savedP2Name);
-    if (savedP2Avatar && AVATAR_OPTIONS.includes(savedP2Avatar)) setP2Avatar(savedP2Avatar);
-  }, []);
+    localStorage.setItem('sl_p1_name', p1Name);
+    localStorage.setItem('sl_p1_avatar', p1Avatar);
+    localStorage.setItem('sl_p2_name', p2Name);
+    localStorage.setItem('sl_p2_avatar', p2Avatar);
+    localStorage.setItem('sl_difficulty', difficulty);
+  }, [p1Name, p1Avatar, p2Name, p2Avatar, difficulty]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (p1Name && p2Name) {
-      // Persist to local storage
-      localStorage.setItem('sl_p1_name', p1Name);
-      localStorage.setItem('sl_p1_avatar', p1Avatar);
-      localStorage.setItem('sl_p2_name', p2Name);
-      localStorage.setItem('sl_p2_avatar', p2Avatar);
-
-      onStartGame(p1Name, p1Avatar, p2Name, p2Avatar);
+      onStartGame(p1Name, p1Avatar, p2Name, p2Avatar, difficulty);
     }
   };
 
@@ -70,7 +74,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
                   value={p1Name}
                   onChange={(e) => setP1Name(e.target.value)}
                   onFocus={handleFocus}
-                  className="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 focus:outline-none transition-all font-bold text-slate-700"
+                  className="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 focus:outline-none transition-all font-bold shadow-sm"
                   placeholder="Enter name..."
                   required
                 />
@@ -87,7 +91,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
                       className={`p-2 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center gap-1 ${
                         p1Avatar === avatar 
                           ? 'border-indigo-400 bg-indigo-50 scale-105 shadow-md' 
-                          : 'border-slate-100 hover:border-indigo-200 hover:bg-slate-50'
+                          : 'border-slate-100 hover:border-indigo-200 hover:bg-slate-50 bg-white'
                       }`}
                     >
                       <AvatarIcon type={avatar} className="w-10 h-10" />
@@ -111,7 +115,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
                   value={p2Name}
                   onChange={(e) => setP2Name(e.target.value)}
                   onFocus={handleFocus}
-                  className="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 focus:border-pink-400 focus:ring-4 focus:ring-pink-100 focus:outline-none transition-all font-bold text-slate-700"
+                  className="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-pink-400 focus:ring-4 focus:ring-pink-100 focus:outline-none transition-all font-bold shadow-sm"
                   placeholder="Enter name..."
                   required
                 />
@@ -128,7 +132,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
                       className={`p-2 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center gap-1 ${
                         p2Avatar === avatar 
                           ? 'border-pink-400 bg-pink-50 scale-105 shadow-md' 
-                          : 'border-slate-100 hover:border-pink-200 hover:bg-slate-50'
+                          : 'border-slate-100 hover:border-pink-200 hover:bg-slate-50 bg-white'
                       }`}
                     >
                       <AvatarIcon type={avatar} className="w-10 h-10" />
@@ -136,6 +140,55 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className="mt-8 border-t-2 border-slate-100 pt-8">
+            <label className="block text-center text-sm font-bold text-slate-400 mb-4 uppercase tracking-wide">Game Difficulty</label>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <button
+                type="button"
+                onClick={() => setDifficulty(Difficulty.EASY)}
+                className={`flex items-center gap-3 px-6 py-4 rounded-xl border-2 transition-all sm:w-64 ${
+                  difficulty === Difficulty.EASY
+                    ? 'border-green-400 bg-green-50 shadow-md ring-2 ring-green-100'
+                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-400'
+                }`}
+              >
+                <div className={`p-2 rounded-full shrink-0 ${difficulty === Difficulty.EASY ? 'bg-green-200 text-green-700' : 'bg-slate-100'}`}>
+                  <Sparkles size={24} />
+                </div>
+                <div className="text-left">
+                  <div className={`font-bold ${difficulty === Difficulty.EASY ? 'text-green-700' : 'text-slate-600'}`}>Easy Start</div>
+                  <div className="text-xs text-slate-500 font-medium mt-1">
+                    Board Size: 50<br/>
+                    Ages 4-6<br/>
+                    Simple Math
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDifficulty(Difficulty.HARD)}
+                className={`flex items-center gap-3 px-6 py-4 rounded-xl border-2 transition-all sm:w-64 ${
+                  difficulty === Difficulty.HARD
+                    ? 'border-violet-400 bg-violet-50 shadow-md ring-2 ring-violet-100'
+                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-400'
+                }`}
+              >
+                 <div className={`p-2 rounded-full shrink-0 ${difficulty === Difficulty.HARD ? 'bg-violet-200 text-violet-700' : 'bg-slate-100'}`}>
+                  <Brain size={24} />
+                </div>
+                <div className="text-left">
+                  <div className={`font-bold ${difficulty === Difficulty.HARD ? 'text-violet-700' : 'text-slate-600'}`}>Big Adventure</div>
+                  <div className="text-xs text-slate-500 font-medium mt-1">
+                    Board Size: 100<br/>
+                    Ages 7-10<br/>
+                    Tricky Traps
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
 

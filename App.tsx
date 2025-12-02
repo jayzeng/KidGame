@@ -4,7 +4,7 @@ import { Spinner } from './components/Spinner';
 import { Board } from './components/Board';
 import { SetupScreen } from './components/SetupScreen';
 import { AvatarIcon } from './components/AvatarIcon';
-import { GameState, GamePhase, Player, PlayerId } from './types';
+import { GameState, GamePhase, Player, PlayerId, Difficulty } from './types';
 import { getMathFact } from './services/geminiService';
 import { audioService } from './services/audioService';
 import { Award, RefreshCcw, MessageSquare, Volume2 } from 'lucide-react';
@@ -20,42 +20,61 @@ const INITIAL_STATE: GameState = {
   spinValue: 0,
   winner: null,
   logs: [],
+  difficulty: Difficulty.EASY,
 };
 
-const WINNING_SCORE = 100;
+// --- GAME CONFIGURATIONS ---
 
-// Ladders: Start -> End (Shortcut Up)
-const LADDERS: Record<number, number> = {
+const EASY_LADDERS: Record<number, number> = {
+  3: 12,
+  15: 25,
+  22: 38,
+  34: 46
+};
+
+const EASY_MONSTERS: Record<number, number> = {
+  18: 8,
+  29: 13,
+  42: 21,
+  49: 30
+};
+
+const HARD_LADDERS: Record<number, number> = {
   4: 14,
   9: 31,
   21: 42,
   28: 84,
   51: 67,
   71: 91,
-  80: 100 // Lucky ladder!
+  80: 100
 };
 
-// Monsters: Start -> End (Trap Down)
-const MONSTERS: Record<number, number> = {
+const HARD_MONSTERS: Record<number, number> = {
   17: 7,
+  36: 6,
+  45: 25,
   54: 34,
   62: 19,
   64: 60,
-  87: 24, // Big drop!
+  87: 24,
   93: 73,
   95: 75,
   98: 79
 };
 
-const getSpecialMoves = () => {
-  const moves = [];
-  for (const [start, end] of Object.entries(LADDERS)) {
-    moves.push({ start: parseInt(start), end: end, type: 'ladder' as const });
+const getGameConfig = (difficulty: Difficulty) => {
+  if (difficulty === Difficulty.EASY) {
+    return {
+      maxScore: 50,
+      ladders: EASY_LADDERS,
+      monsters: EASY_MONSTERS,
+    };
   }
-  for (const [start, end] of Object.entries(MONSTERS)) {
-    moves.push({ start: parseInt(start), end: end, type: 'monster' as const });
-  }
-  return moves;
+  return {
+    maxScore: 100,
+    ladders: HARD_LADDERS,
+    monsters: HARD_MONSTERS,
+  };
 };
 
 function App() {
@@ -68,6 +87,9 @@ function App() {
 
   const logsEndRef = useRef<HTMLDivElement>(null);
 
+  // Derived config
+  const gameConfig = getGameConfig(gameState.difficulty);
+
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [gameState.logs]);
@@ -76,15 +98,27 @@ function App() {
     setGameState(prev => ({ ...prev, logs: [...prev.logs, msg] }));
   };
 
-  const handleStartGame = (p1Name: string, p1Avatar: string, p2Name: string, p2Avatar: string) => {
+  const getSpecialMoves = () => {
+    const moves = [];
+    for (const [start, end] of Object.entries(gameConfig.ladders)) {
+      moves.push({ start: parseInt(start), end: end, type: 'ladder' as const });
+    }
+    for (const [start, end] of Object.entries(gameConfig.monsters)) {
+      moves.push({ start: parseInt(start), end: end, type: 'monster' as const });
+    }
+    return moves;
+  };
+
+  const handleStartGame = (p1Name: string, p1Avatar: string, p2Name: string, p2Avatar: string, difficulty: Difficulty) => {
     setGameState(prev => ({
       ...prev,
       players: {
-        [PlayerId.ONE]: { ...prev.players[PlayerId.ONE], name: p1Name, avatar: p1Avatar },
-        [PlayerId.TWO]: { ...prev.players[PlayerId.TWO], name: p2Name, avatar: p2Avatar },
+        [PlayerId.ONE]: { ...prev.players[PlayerId.ONE], name: p1Name, avatar: p1Avatar, position: 1 },
+        [PlayerId.TWO]: { ...prev.players[PlayerId.TWO], name: p2Name, avatar: p2Avatar, position: 1 },
       },
       phase: GamePhase.ROLL_DICE,
-      logs: [`Welcome to Steps & Leaps! ${p1Name} starts.`]
+      logs: [`Welcome to Steps & Leaps! ${p1Name} starts.`],
+      difficulty: difficulty
     }));
     audioService.playWin(); // Play a sound to start
   };
@@ -134,7 +168,7 @@ function App() {
     setIsAnimating(true);
     const playerId = gameState.currentPlayerId;
     let currentPos = gameState.players[playerId].position;
-    const targetPos = Math.min(currentPos + totalAmount, WINNING_SCORE);
+    const targetPos = Math.min(currentPos + totalAmount, gameConfig.maxScore);
     
     const stepDelay = isSteps ? 400 : 200; 
     
@@ -170,17 +204,17 @@ function App() {
     const playerId = gameState.currentPlayerId;
     const playerName = gameState.players[playerId].name;
 
-    // Check for Ladders or Monsters
+    // Check for Ladders or Monsters from current config
     let specialMoveHappened = false;
     
-    if (LADDERS[actualFinalPos]) {
-      const ladderEnd = LADDERS[actualFinalPos];
+    if (gameConfig.ladders[actualFinalPos]) {
+      const ladderEnd = gameConfig.ladders[actualFinalPos];
       addLog(`✨ WOW! ${playerName} found a ladder to ${ladderEnd}!`);
       audioService.playLadder();
       actualFinalPos = ladderEnd;
       specialMoveHappened = true;
-    } else if (MONSTERS[actualFinalPos]) {
-      const monsterEnd = MONSTERS[actualFinalPos];
+    } else if (gameConfig.monsters[actualFinalPos]) {
+      const monsterEnd = gameConfig.monsters[actualFinalPos];
       addLog(`👻 OOPS! A monster scared ${playerName} back to ${monsterEnd}!`);
       audioService.playMonster();
       actualFinalPos = monsterEnd;
@@ -204,7 +238,7 @@ function App() {
 
     setIsAnimating(false);
 
-    const hasWon = actualFinalPos >= WINNING_SCORE;
+    const hasWon = actualFinalPos >= gameConfig.maxScore;
 
     setGameState(prev => ({
       ...prev,
@@ -220,9 +254,7 @@ function App() {
       setLoadingAi(true);
       setAiMessage(null);
       
-      // Pass if it was a monster or ladder to context?
-      // Just pass the number for now.
-      const fact = await getMathFact(actualFinalPos);
+      const fact = await getMathFact(actualFinalPos, gameState.difficulty);
       if (fact) setAiMessage(fact);
       setLoadingAi(false);
 
@@ -247,11 +279,13 @@ function App() {
   const resetGame = () => {
     setGameState(prev => ({
       ...INITIAL_STATE,
+      // Persist players and difficulty
       players: {
           [PlayerId.ONE]: { ...prev.players[PlayerId.ONE], position: 1 },
           [PlayerId.TWO]: { ...prev.players[PlayerId.TWO], position: 1 },
       },
-      phase: GamePhase.ROLL_DICE, // Reset to start of game, keep names
+      difficulty: prev.difficulty,
+      phase: GamePhase.ROLL_DICE, 
     }));
     setAiMessage(null);
     setLoadingAi(false);
@@ -277,7 +311,10 @@ function App() {
           <h1 className="text-3xl font-black text-slate-800 mb-2 flex items-center gap-2">
             <span className="text-blue-500">Steps</span> & <span className="text-green-500">Leaps</span>
           </h1>
-          <p className="text-slate-500 text-sm">Race to 100! Watch out for monsters!</p>
+          <p className="text-slate-500 text-sm">Race to {gameConfig.maxScore}! Watch out for monsters!</p>
+          <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+             Mode: {gameState.difficulty === Difficulty.EASY ? 'Easy (50 squares)' : 'Hard (100 squares)'}
+          </div>
         </div>
 
         {/* Current Player Status */}
@@ -370,7 +407,7 @@ function App() {
       {/* RIGHT COLUMN: The Board */}
       <div className="w-full md:w-2/3 order-1 md:order-2">
          <div className="sticky top-4">
-            <Board players={gameState.players} specialMoves={getSpecialMoves()} />
+            <Board players={gameState.players} specialMoves={getSpecialMoves()} maxScore={gameConfig.maxScore} />
             
             {/* Legend / Info */}
             <div className="mt-6 grid grid-cols-2 gap-4">
@@ -380,7 +417,7 @@ function App() {
                </div>
                <div className="flex items-center gap-2 bg-white p-3 rounded-lg shadow-sm">
                   <div className="w-4 h-4 bg-yellow-100 border border-yellow-300 rounded ring-1 ring-yellow-400"></div>
-                  <span className="text-sm text-slate-600">Goal (100)</span>
+                  <span className="text-sm text-slate-600">Goal ({gameConfig.maxScore})</span>
                </div>
                <div className="col-span-2 text-center text-xs text-slate-400 flex items-center justify-center gap-1">
                  <Volume2 className="w-3 h-3"/> Sounds enabled
