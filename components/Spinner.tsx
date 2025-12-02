@@ -4,19 +4,12 @@ interface SpinnerProps {
   onSpinComplete: (value: number) => void;
   disabled: boolean;
   spinTrigger: boolean;
+  className?: string;
 }
 
-export const Spinner: React.FC<SpinnerProps> = ({ onSpinComplete, disabled, spinTrigger }) => {
+export const Spinner: React.FC<SpinnerProps> = ({ onSpinComplete, disabled, spinTrigger, className = "w-32 h-32 sm:w-48 sm:h-48" }) => {
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
-
-  // Define segments: 8 slices.
-  // 360 / 8 = 45 degrees per slice.
-  // Values based on image:
-  // 1 Ten (10), 2 Tens (20), 1 Ten (10), 3 Tens (30),
-  // 2 Tens (20), 1 Ten (10), 2 Tens (20), 3 Tens (30)
-  // Let's map degrees to values roughly.
-  // We'll construct the result purely by random selection then rotate to match.
 
   useEffect(() => {
     if (spinTrigger && !isSpinning) {
@@ -28,23 +21,13 @@ export const Spinner: React.FC<SpinnerProps> = ({ onSpinComplete, disabled, spin
   const spin = () => {
     setIsSpinning(true);
     
-    // Weighted logic:
-    // 10s appear roughly 3/8 times
-    // 20s appear roughly 3/8 times
-    // 30s appear roughly 2/8 times
+    // Weighted logic
     const rand = Math.random();
     let resultValue = 10;
     if (rand > 0.375 && rand <= 0.75) resultValue = 20;
     if (rand > 0.75) resultValue = 30;
 
-    // Calculate rotation to land on a slice representing this value.
-    // For visual simplicity, we'll just rotate a crazy amount + a fixed offset based on value.
-    // Let's say:
-    // 10 -> lands around 45deg
-    // 20 -> lands around 135deg
-    // 30 -> lands around 225deg
-    // Add random jitter within the slice
-    
+    // Calculate rotation
     let targetAngle = 0;
     const jitter = Math.floor(Math.random() * 30) - 15;
 
@@ -61,7 +44,7 @@ export const Spinner: React.FC<SpinnerProps> = ({ onSpinComplete, disabled, spin
   };
 
   return (
-    <div className={`relative w-48 h-48 ${disabled ? 'opacity-50 grayscale' : ''}`}>
+    <div className={`relative ${className} ${disabled ? 'opacity-50 grayscale' : ''}`}>
       {/* Pointer */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-20 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[20px] border-t-red-600 drop-shadow-md" />
 
@@ -88,28 +71,20 @@ export const Spinner: React.FC<SpinnerProps> = ({ onSpinComplete, disabled, spin
         />
         
         {/* Lines/Labels overlay */}
-        <div className="absolute inset-0 rounded-full">
+        <div className="absolute inset-0 rounded-full text-[10px] sm:text-base">
            {/* We can place labels absolutely based on rotation */}
-           {/* 0-45 (Top Rightish): 10 */}
            <span className="absolute top-[15%] right-[30%] font-bold text-slate-800 rotate-[22deg]">10</span>
-           {/* 45-90: 20 */}
            <span className="absolute top-[30%] right-[15%] font-bold text-slate-800 rotate-[67deg]">20</span>
-           {/* 90-135: 30 */}
            <span className="absolute bottom-[30%] right-[15%] font-bold text-slate-800 rotate-[112deg]">30</span>
-           {/* 135-180: 10 */}
            <span className="absolute bottom-[15%] right-[30%] font-bold text-slate-800 rotate-[157deg]">10</span>
-           {/* 180-225: 20 */}
            <span className="absolute bottom-[15%] left-[30%] font-bold text-slate-800 rotate-[202deg]">20</span>
-           {/* 225-270: 30 */}
            <span className="absolute bottom-[30%] left-[15%] font-bold text-slate-800 rotate-[247deg]">30</span>
-           {/* 270-315: 10 */}
            <span className="absolute top-[30%] left-[15%] font-bold text-slate-800 rotate-[292deg]">10</span>
-           {/* 315-360: 20 */}
            <span className="absolute top-[15%] left-[30%] font-bold text-slate-800 rotate-[337deg]">20</span>
         </div>
 
         {/* Center Pin */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-slate-800 rounded-full z-10 border-2 border-white" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 bg-slate-800 rounded-full z-10 border-2 border-white" />
       </div>
     </div>
   );

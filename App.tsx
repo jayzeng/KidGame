@@ -7,7 +7,7 @@ import { AvatarIcon } from './components/AvatarIcon';
 import { GameState, GamePhase, Player, PlayerId, Difficulty } from './types';
 import { getMathFact } from './services/geminiService';
 import { audioService } from './services/audioService';
-import { Award, RefreshCcw, MessageSquare, Volume2 } from 'lucide-react';
+import { Award, RefreshCcw, MessageSquare, Volume2, Gamepad2 } from 'lucide-react';
 
 const INITIAL_STATE: GameState = {
   players: {
@@ -300,26 +300,108 @@ function App() {
 
   const currentPlayer = gameState.players[gameState.currentPlayerId];
 
+  // Helper controls component for reuse in desktop sidebar and mobile bottom sheet
+  const GameControls = ({ isMobile = false }) => {
+    // Only show irrelevant controls as disabled/transparent on Desktop.
+    // On Mobile, we only show what's ACTIVE to save space.
+    
+    const showDice = !isMobile || (gameState.phase === GamePhase.ROLL_DICE || (gameState.phase === GamePhase.MOVING_STEPS));
+    const showSpinner = !isMobile || (gameState.phase === GamePhase.SPIN_WHEEL || (gameState.phase === GamePhase.MOVING_LEAPS));
+    const showGameOver = gameState.winner !== null;
+
+    if (showGameOver) {
+       return (
+          <button onClick={resetGame} className="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-bold text-xl rounded-2xl shadow-xl flex items-center justify-center gap-2 animate-bounce">
+            <RefreshCcw /> Play Again
+          </button>
+       )
+    }
+
+    return (
+      <div className={`space-y-4 ${isMobile ? 'flex flex-row items-center gap-4 space-y-0 w-full' : ''}`}>
+        
+        {/* Dice Section */}
+        {showDice && (
+          <div className={`transition-opacity duration-300 ${!isMobile && (gameState.phase !== GamePhase.ROLL_DICE && gameState.phase !== GamePhase.MOVING_STEPS) ? 'opacity-30 grayscale pointer-events-none' : ''} ${isMobile ? 'flex-1 flex flex-col items-center' : ''}`}>
+             {!isMobile && (
+                <div className="flex justify-center gap-4 mb-4">
+                  <Dice value={gameState.diceValues[0]} rolling={isRolling} />
+                  <Dice value={gameState.diceValues[1]} rolling={isRolling} />
+                </div>
+             )}
+             {isMobile && (
+                <div className="flex justify-center gap-2 mb-2 scale-75">
+                  <Dice value={gameState.diceValues[0]} rolling={isRolling} />
+                  <Dice value={gameState.diceValues[1]} rolling={isRolling} />
+                </div>
+             )}
+             <button
+                onClick={handleRollDice}
+                disabled={gameState.phase !== GamePhase.ROLL_DICE || isRolling || isAnimating}
+                className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-300 text-white font-bold rounded-xl shadow-lg transform active:scale-95 transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+              >
+                {isRolling ? 'Rolling...' : 'Roll Dice (Steps)'}
+              </button>
+          </div>
+        )}
+
+        {!isMobile && <div className="w-full h-px bg-slate-200"></div>}
+
+        {/* Spinner Section */}
+        {showSpinner && (
+          <div className={`flex flex-col items-center transition-opacity duration-300 ${!isMobile && (gameState.phase !== GamePhase.SPIN_WHEEL && gameState.phase !== GamePhase.MOVING_LEAPS) ? 'opacity-30 grayscale pointer-events-none' : ''} ${isMobile ? 'flex-1' : ''}`}>
+             <Spinner 
+                onSpinComplete={onSpinComplete} 
+                disabled={gameState.phase !== GamePhase.SPIN_WHEEL || isAnimating} 
+                spinTrigger={spinTrigger}
+                className={isMobile ? "w-24 h-24" : "w-48 h-48"}
+             />
+             <button
+              onClick={handleSpin}
+              disabled={gameState.phase !== GamePhase.SPIN_WHEEL || spinTrigger || isAnimating}
+              className="mt-4 w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-200 text-white font-bold rounded-xl shadow-lg transform active:scale-95 transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+            >
+              {spinTrigger ? 'Spinning...' : 'Spin (Leaps)'}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row max-w-7xl mx-auto">
       
-      {/* LEFT COLUMN: Controls & Game State */}
-      <div className="w-full md:w-1/3 flex flex-col gap-6 order-2 md:order-1">
+      {/* MOBILE HEADER (Sticky) */}
+      <div className="md:hidden sticky top-0 z-50 bg-white shadow-sm border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+         <div className="flex items-center gap-2">
+            <Gamepad2 className="w-5 h-5 text-indigo-500"/>
+            <span className="font-bold text-slate-700">Steps & Leaps</span>
+         </div>
+         <div className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-full">
+            <AvatarIcon type={currentPlayer.avatar} className="w-5 h-5" />
+            <span className="font-bold text-sm text-slate-800">{currentPlayer.name}</span>
+            <span className="text-xs bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono">{currentPlayer.position}</span>
+         </div>
+      </div>
+
+      {/* LEFT SIDEBAR (Desktop Only) */}
+      <div className="hidden md:flex w-1/3 flex-col gap-6 p-8 h-screen sticky top-0 overflow-y-auto border-r border-slate-200 bg-white">
         
         {/* Header */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div>
           <h1 className="text-3xl font-black text-slate-800 mb-2 flex items-center gap-2">
             <span className="text-blue-500">Steps</span> & <span className="text-green-500">Leaps</span>
           </h1>
-          <p className="text-slate-500 text-sm">Race to {gameConfig.maxScore}! Watch out for monsters!</p>
+          <p className="text-slate-500 text-sm">Race to {gameConfig.maxScore}!</p>
           <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
-             Mode: {gameState.difficulty === Difficulty.EASY ? 'Easy (50 squares)' : 'Hard (100 squares)'}
+             Mode: {gameState.difficulty === Difficulty.EASY ? 'Easy' : 'Hard'}
           </div>
         </div>
 
-        {/* Current Player Status */}
+        {/* Current Player Status Card */}
         <div className={`p-6 rounded-2xl shadow-md border-2 transition-colors duration-300 ${currentPlayer.id === PlayerId.ONE ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}`}>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-sm border-4 border-white" style={{ backgroundColor: currentPlayer.color }}>
                 <AvatarIcon type={currentPlayer.avatar} className="w-12 h-12" />
@@ -334,43 +416,7 @@ function App() {
             {gameState.winner && <Award className="text-yellow-500 w-10 h-10 animate-bounce" />}
           </div>
 
-          {/* Action Area */}
-          <div className="space-y-6">
-            
-            {/* Phase 1: Dice */}
-            <div className={`transition-opacity duration-300 ${gameState.phase === GamePhase.ROLL_DICE || (gameState.phase === GamePhase.MOVING_STEPS && isAnimating) ? 'opacity-100' : 'opacity-30 grayscale pointer-events-none'}`}>
-              <div className="flex justify-center gap-4 mb-4">
-                <Dice value={gameState.diceValues[0]} rolling={isRolling} />
-                <Dice value={gameState.diceValues[1]} rolling={isRolling} />
-              </div>
-              <button
-                onClick={handleRollDice}
-                disabled={gameState.phase !== GamePhase.ROLL_DICE || isRolling || isAnimating}
-                className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-300 text-white font-bold rounded-xl shadow-lg transform active:scale-95 transition-all flex items-center justify-center gap-2"
-              >
-                {isRolling ? 'Rolling...' : 'Roll Dice (Steps)'}
-              </button>
-            </div>
-
-            <div className="w-full h-px bg-slate-200"></div>
-
-            {/* Phase 2: Spinner */}
-            <div className={`flex flex-col items-center transition-opacity duration-300 ${gameState.phase === GamePhase.SPIN_WHEEL || (gameState.phase === GamePhase.MOVING_LEAPS && isAnimating) ? 'opacity-100' : 'opacity-30 grayscale pointer-events-none'}`}>
-               <Spinner 
-                  onSpinComplete={onSpinComplete} 
-                  disabled={gameState.phase !== GamePhase.SPIN_WHEEL || isAnimating} 
-                  spinTrigger={spinTrigger}
-               />
-               <button
-                onClick={handleSpin}
-                disabled={gameState.phase !== GamePhase.SPIN_WHEEL || spinTrigger || isAnimating}
-                className="mt-4 w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-200 text-white font-bold rounded-xl shadow-lg transform active:scale-95 transition-all flex items-center justify-center gap-2"
-              >
-                {spinTrigger ? 'Spinning...' : 'Spin (Leaps)'}
-              </button>
-            </div>
-
-          </div>
+          <GameControls isMobile={false} />
         </div>
 
         {/* AI Math Buddy */}
@@ -386,7 +432,7 @@ function App() {
         )}
 
         {/* Game Log */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-48 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col flex-1 min-h-[150px] overflow-hidden">
            <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 font-semibold text-slate-500 text-xs uppercase tracking-wider">Game Log</div>
            <div className="flex-1 overflow-y-auto p-4 space-y-2 text-sm text-slate-600">
              {gameState.logs.map((log, i) => (
@@ -395,34 +441,41 @@ function App() {
              <div ref={logsEndRef} />
            </div>
         </div>
-
-        {gameState.winner && (
-          <button onClick={resetGame} className="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-bold text-xl rounded-2xl shadow-xl flex items-center justify-center gap-2 animate-bounce">
-            <RefreshCcw /> Play Again
-          </button>
-        )}
-
       </div>
 
-      {/* RIGHT COLUMN: The Board */}
-      <div className="w-full md:w-2/3 order-1 md:order-2">
-         <div className="sticky top-4">
-            <Board players={gameState.players} specialMoves={getSpecialMoves()} maxScore={gameConfig.maxScore} />
-            
-            {/* Legend / Info */}
-            <div className="mt-6 grid grid-cols-2 gap-4">
-               <div className="flex items-center gap-2 bg-white p-3 rounded-lg shadow-sm">
-                  <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                  <span className="text-sm text-slate-600">Start (1)</span>
+      {/* RIGHT/MAIN CONTENT (The Board) */}
+      <div className="flex-1 p-2 pb-40 md:pb-8 md:p-8 overflow-y-auto">
+         {/* Toast for AI Message on Mobile */}
+         <div className="md:hidden">
+             {(aiMessage || loadingAi) && (
+               <div className="mb-4 bg-violet-100 p-3 rounded-lg border border-violet-200 text-sm shadow-sm animate-pulse-once">
+                  <p className="text-violet-900 font-medium">
+                    <span className="font-bold mr-1">Math Buddy:</span>
+                    {loadingAi ? "..." : aiMessage}
+                  </p>
                </div>
-               <div className="flex items-center gap-2 bg-white p-3 rounded-lg shadow-sm">
-                  <div className="w-4 h-4 bg-yellow-100 border border-yellow-300 rounded ring-1 ring-yellow-400"></div>
-                  <span className="text-sm text-slate-600">Goal ({gameConfig.maxScore})</span>
-               </div>
-               <div className="col-span-2 text-center text-xs text-slate-400 flex items-center justify-center gap-1">
-                 <Volume2 className="w-3 h-3"/> Sounds enabled
-               </div>
+            )}
+         </div>
+
+         <Board players={gameState.players} specialMoves={getSpecialMoves()} maxScore={gameConfig.maxScore} />
+         
+         {/* Legend / Info */}
+         <div className="mt-6 grid grid-cols-2 gap-4 max-w-sm mx-auto md:max-w-none">
+            <div className="flex items-center gap-2 bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+               <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
+               <span className="text-xs sm:text-sm text-slate-600">Start (1)</span>
             </div>
+            <div className="flex items-center gap-2 bg-white p-3 rounded-lg shadow-sm border border-slate-100">
+               <div className="w-4 h-4 bg-yellow-100 border border-yellow-300 rounded ring-1 ring-yellow-400"></div>
+               <span className="text-xs sm:text-sm text-slate-600">Goal ({gameConfig.maxScore})</span>
+            </div>
+         </div>
+      </div>
+
+      {/* MOBILE BOTTOM CONTROLS (Fixed) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40">
+         <div className="flex justify-center">
+            <GameControls isMobile={true} />
          </div>
       </div>
 

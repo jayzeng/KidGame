@@ -50,25 +50,25 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
 
   return (
     <div className="min-h-screen bg-indigo-50 flex items-center justify-center p-4">
-      <div className="max-w-4xl w-full bg-white rounded-[2rem] shadow-xl overflow-hidden border-4 border-indigo-100">
-        <div className="bg-indigo-400 p-8 text-center text-white relative overflow-hidden">
+      <div className="max-w-4xl w-full bg-white rounded-[1.5rem] md:rounded-[2rem] shadow-xl overflow-hidden border-4 border-indigo-100">
+        <div className="bg-indigo-400 p-6 md:p-8 text-center text-white relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-          <h1 className="text-4xl font-black mb-2 relative z-10">Steps & Leaps</h1>
-          <p className="opacity-90 font-medium relative z-10">Customize your adventure!</p>
+          <h1 className="text-3xl md:text-4xl font-black mb-2 relative z-10">Steps & Leaps</h1>
+          <p className="opacity-90 font-medium relative z-10 text-sm md:text-base">Customize your adventure!</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8">
-          <div className="grid md:grid-cols-2 gap-12">
+        <form onSubmit={handleSubmit} className="p-4 md:p-8">
+          <div className="grid md:grid-cols-2 gap-8 md:gap-12">
             
             {/* Player 1 Setup */}
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               <div className="flex items-center gap-3 mb-4 border-b-2 border-indigo-50 pb-2">
-                <span className="bg-indigo-400 text-white w-10 h-10 rounded-xl flex items-center justify-center font-black shadow-sm transform -rotate-3">1</span>
-                <h2 className="text-2xl font-bold text-slate-700">Player 1</h2>
+                <span className="bg-indigo-400 text-white w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center font-black shadow-sm transform -rotate-3 text-sm md:text-base">1</span>
+                <h2 className="text-xl md:text-2xl font-bold text-slate-700">Player 1</h2>
               </div>
               
               <div>
-                <label className="block text-sm font-bold text-slate-400 mb-2 uppercase tracking-wide">Name</label>
+                <label className="block text-xs md:text-sm font-bold text-slate-400 mb-2 uppercase tracking-wide">Name</label>
                 <input
                   type="text"
                   value={p1Name}
@@ -81,8 +81,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-400 mb-2 uppercase tracking-wide">Choose Friend</label>
-                <div className="grid grid-cols-3 gap-3">
+                <label className="block text-xs md:text-sm font-bold text-slate-400 mb-2 uppercase tracking-wide">Choose Friend</label>
+                <div className="grid grid-cols-6 md:grid-cols-3 gap-2 md:gap-3">
                   {AVATAR_OPTIONS.map((avatar) => (
                     <button
                       key={`p1-${avatar}`}
@@ -94,7 +94,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
                           : 'border-slate-100 hover:border-indigo-200 hover:bg-slate-50 bg-white'
                       }`}
                     >
-                      <AvatarIcon type={avatar} className="w-10 h-10" />
+                      <AvatarIcon type={avatar} className="w-8 h-8 md:w-10 md:h-10" />
                     </button>
                   ))}
                 </div>
@@ -102,14 +102,14 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
             </div>
 
             {/* Player 2 Setup */}
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               <div className="flex items-center gap-3 mb-4 border-b-2 border-indigo-50 pb-2">
-                <span className="bg-pink-400 text-white w-10 h-10 rounded-xl flex items-center justify-center font-black shadow-sm transform rotate-3">2</span>
-                <h2 className="text-2xl font-bold text-slate-700">Player 2</h2>
+                <span className="bg-pink-400 text-white w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center font-black shadow-sm transform rotate-3 text-sm md:text-base">2</span>
+                <h2 className="text-xl md:text-2xl font-bold text-slate-700">Player 2</h2>
               </div>
               
               <div>
-                <label className="block text-sm font-bold text-slate-400 mb-2 uppercase tracking-wide">Name</label>
+                <label className="block text-xs md:text-sm font-bold text-slate-400 mb-2 uppercase tracking-wide">Name</label>
                 <input
                   type="text"
                   value={p2Name}
@@ -122,8 +122,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-400 mb-2 uppercase tracking-wide">Choose Friend</label>
-                <div className="grid grid-cols-3 gap-3">
+                <label className="block text-xs md:text-sm font-bold text-slate-400 mb-2 uppercase tracking-wide">Choose Friend</label>
+                <div className="grid grid-cols-6 md:grid-cols-3 gap-2 md:gap-3">
                   {AVATAR_OPTIONS.map((avatar) => (
                     <button
                       key={`p2-${avatar}`}
@@ -135,7 +135,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
                           : 'border-slate-100 hover:border-pink-200 hover:bg-slate-50 bg-white'
                       }`}
                     >
-                      <AvatarIcon type={avatar} className="w-10 h-10" />
+                      <AvatarIcon type={avatar} className="w-8 h-8 md:w-10 md:h-10" />
                     </button>
                   ))}
                 </div>
@@ -144,26 +144,25 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
           </div>
 
           <div className="mt-8 border-t-2 border-slate-100 pt-8">
-            <label className="block text-center text-sm font-bold text-slate-400 mb-4 uppercase tracking-wide">Game Difficulty</label>
+            <label className="block text-center text-xs md:text-sm font-bold text-slate-400 mb-4 uppercase tracking-wide">Game Difficulty</label>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <button
                 type="button"
                 onClick={() => setDifficulty(Difficulty.EASY)}
-                className={`flex items-center gap-3 px-6 py-4 rounded-xl border-2 transition-all sm:w-64 ${
+                className={`flex items-center gap-3 px-4 py-3 md:px-6 md:py-4 rounded-xl border-2 transition-all sm:w-64 ${
                   difficulty === Difficulty.EASY
                     ? 'border-green-400 bg-green-50 shadow-md ring-2 ring-green-100'
                     : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-400'
                 }`}
               >
                 <div className={`p-2 rounded-full shrink-0 ${difficulty === Difficulty.EASY ? 'bg-green-200 text-green-700' : 'bg-slate-100'}`}>
-                  <Sparkles size={24} />
+                  <Sparkles size={20} className="md:w-6 md:h-6" />
                 </div>
                 <div className="text-left">
-                  <div className={`font-bold ${difficulty === Difficulty.EASY ? 'text-green-700' : 'text-slate-600'}`}>Easy Start</div>
-                  <div className="text-xs text-slate-500 font-medium mt-1">
-                    Board Size: 50<br/>
+                  <div className={`font-bold text-sm md:text-base ${difficulty === Difficulty.EASY ? 'text-green-700' : 'text-slate-600'}`}>Easy Start</div>
+                  <div className="text-[10px] md:text-xs text-slate-500 font-medium mt-1">
+                    Board: 50 squares<br/>
                     Ages 4-6<br/>
-                    Simple Math
                   </div>
                 </div>
               </button>
@@ -171,31 +170,30 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
               <button
                 type="button"
                 onClick={() => setDifficulty(Difficulty.HARD)}
-                className={`flex items-center gap-3 px-6 py-4 rounded-xl border-2 transition-all sm:w-64 ${
+                className={`flex items-center gap-3 px-4 py-3 md:px-6 md:py-4 rounded-xl border-2 transition-all sm:w-64 ${
                   difficulty === Difficulty.HARD
                     ? 'border-violet-400 bg-violet-50 shadow-md ring-2 ring-violet-100'
                     : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-400'
                 }`}
               >
                  <div className={`p-2 rounded-full shrink-0 ${difficulty === Difficulty.HARD ? 'bg-violet-200 text-violet-700' : 'bg-slate-100'}`}>
-                  <Brain size={24} />
+                  <Brain size={20} className="md:w-6 md:h-6" />
                 </div>
                 <div className="text-left">
-                  <div className={`font-bold ${difficulty === Difficulty.HARD ? 'text-violet-700' : 'text-slate-600'}`}>Big Adventure</div>
-                  <div className="text-xs text-slate-500 font-medium mt-1">
-                    Board Size: 100<br/>
+                  <div className={`font-bold text-sm md:text-base ${difficulty === Difficulty.HARD ? 'text-violet-700' : 'text-slate-600'}`}>Big Adventure</div>
+                  <div className="text-[10px] md:text-xs text-slate-500 font-medium mt-1">
+                    Board: 100 squares<br/>
                     Ages 7-10<br/>
-                    Tricky Traps
                   </div>
                 </div>
               </button>
             </div>
           </div>
 
-          <div className="mt-12 flex justify-center">
+          <div className="mt-8 md:mt-12 flex justify-center pb-8 md:pb-0">
             <button
               type="submit"
-              className="group relative px-10 py-5 bg-slate-800 text-white font-black text-xl rounded-2xl shadow-xl hover:bg-slate-700 hover:shadow-2xl hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-3"
+              className="w-full md:w-auto group relative px-10 py-4 md:py-5 bg-slate-800 text-white font-black text-lg md:text-xl rounded-2xl shadow-xl hover:bg-slate-700 hover:shadow-2xl hover:-translate-y-1 transition-all active:scale-95 flex items-center justify-center gap-3"
             >
               Start Game!
               <ArrowRight className="group-hover:translate-x-2 transition-transform" />
