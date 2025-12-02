@@ -21,9 +21,11 @@ interface BoardProps {
   players: Record<PlayerId, Player>;
   specialMoves: SpecialMove[];
   maxScore: number;
+  currentPlayerId: PlayerId;
+  isAnimating: boolean;
 }
 
-export const Board: React.FC<BoardProps> = ({ players, specialMoves, maxScore }) => {
+export const Board: React.FC<BoardProps> = ({ players, specialMoves, maxScore, currentPlayerId, isAnimating }) => {
   const gridCells = [];
   const rows = Math.ceil(maxScore / 10);
   
@@ -248,16 +250,20 @@ export const Board: React.FC<BoardProps> = ({ players, specialMoves, maxScore })
               {/* Players */}
               <div className="absolute inset-0 flex items-center justify-center z-30">
                  <div className="flex -space-x-2 sm:-space-x-3 transition-all duration-500">
-                  {occupants.map((p) => (
-                    <div
-                      key={p.id}
-                      className={`w-5 h-5 sm:w-9 sm:h-9 rounded-full border border-white sm:border-2 shadow-lg flex items-center justify-center transform transition-transform duration-300 hover:scale-125 hover:z-50 bg-white`}
-                      title={p.name}
-                    >
-                      <AvatarIcon type={p.avatar} className="w-full h-full p-0.5 sm:p-1" />
-                      <div className="absolute inset-0 rounded-full border sm:border-2 opacity-50" style={{ borderColor: p.color }}></div>
-                    </div>
-                  ))}
+                  {occupants.map((p) => {
+                    const isMyTurnAndNotMoving = p.id === currentPlayerId && !isAnimating;
+                    return (
+                      <div
+                        key={p.id}
+                        className={`w-5 h-5 sm:w-9 sm:h-9 rounded-full border border-white sm:border-2 shadow-lg flex items-center justify-center transform transition-transform duration-300 hover:scale-125 hover:z-50 bg-white
+                        ${isMyTurnAndNotMoving ? 'animate-bounce' : ''}`}
+                        title={p.name}
+                      >
+                        <AvatarIcon type={p.avatar} className="w-full h-full p-0.5 sm:p-1" />
+                        <div className="absolute inset-0 rounded-full border sm:border-2 opacity-50" style={{ borderColor: p.color }}></div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
               

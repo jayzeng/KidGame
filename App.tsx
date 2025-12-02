@@ -277,6 +277,7 @@ function App() {
   };
 
   const resetGame = () => {
+    // If not setup, confirm reset? For now just reset.
     setGameState(prev => ({
       ...INITIAL_STATE,
       // Persist players and difficulty
@@ -375,7 +376,14 @@ function App() {
       {/* MOBILE HEADER (Sticky) */}
       <div className="md:hidden sticky top-0 z-50 bg-white shadow-sm border-b border-slate-200 px-4 py-3 flex items-center justify-between">
          <div className="flex items-center gap-2">
-            <Gamepad2 className="w-5 h-5 text-indigo-500"/>
+            {/* Mobile Reset Button */}
+            <button 
+              onClick={resetGame} 
+              className="p-1.5 -ml-2 text-slate-400 hover:text-red-500 rounded-full hover:bg-slate-50 active:scale-95 transition-all" 
+              title="Reset Game"
+            >
+              <RefreshCcw size={18} />
+            </button>
             <span className="font-bold text-slate-700">Steps & Leaps</span>
          </div>
          <div className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-full">
@@ -390,9 +398,19 @@ function App() {
         
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-black text-slate-800 mb-2 flex items-center gap-2">
-            <span className="text-blue-500">Steps</span> & <span className="text-green-500">Leaps</span>
-          </h1>
+          <div className="flex justify-between items-start">
+             <h1 className="text-3xl font-black text-slate-800 mb-2 flex items-center gap-2">
+                <span className="text-blue-500">Steps</span> & <span className="text-green-500">Leaps</span>
+             </h1>
+             {/* Desktop Reset Button */}
+             <button 
+                onClick={resetGame} 
+                className="text-slate-400 hover:text-red-500 hover:bg-slate-50 p-2 rounded-full transition-all"
+                title="Reset Game"
+              >
+                <RefreshCcw size={18} />
+             </button>
+          </div>
           <p className="text-slate-500 text-sm">Race to {gameConfig.maxScore}!</p>
           <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
              Mode: {gameState.difficulty === Difficulty.EASY ? 'Easy' : 'Hard'}
@@ -457,7 +475,13 @@ function App() {
             )}
          </div>
 
-         <Board players={gameState.players} specialMoves={getSpecialMoves()} maxScore={gameConfig.maxScore} />
+         <Board 
+            players={gameState.players} 
+            specialMoves={getSpecialMoves()} 
+            maxScore={gameConfig.maxScore} 
+            currentPlayerId={gameState.currentPlayerId}
+            isAnimating={isAnimating}
+          />
          
          {/* Legend / Info */}
          <div className="mt-6 grid grid-cols-2 gap-4 max-w-sm mx-auto md:max-w-none">
