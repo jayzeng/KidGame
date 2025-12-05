@@ -7,7 +7,7 @@ import { AvatarIcon } from './components/AvatarIcon';
 import { GameState, GamePhase, Player, PlayerId, Difficulty } from './types';
 import { getMathFact } from './services/geminiService';
 import { audioService } from './services/audioService';
-import { Award, RefreshCcw, MessageSquare, Volume2, Gamepad2 } from 'lucide-react';
+import { Award, RefreshCcw, MessageSquare, Gamepad2 } from 'lucide-react';
 
 const INITIAL_STATE: GameState = {
   players: {
@@ -21,6 +21,7 @@ const INITIAL_STATE: GameState = {
   winner: null,
   logs: [],
   difficulty: Difficulty.EASY,
+  vsComputer: false,
 };
 
 // --- GAME CONFIGURATIONS ---
@@ -109,7 +110,12 @@ function App() {
     return moves;
   };
 
-  const handleStartGame = (p1Name: string, p1Avatar: string, p2Name: string, p2Avatar: string, difficulty: Difficulty) => {
+  const handleStartGame = (p1Name: string, p1Avatar: string, p2Name: string, p2Avatar: string, difficulty: Difficulty, vsComputer: boolean) => {
+    const logs = [`Welcome to Steps & Leaps! ${p1Name} starts.`];
+    if (vsComputer) {
+      logs.push(`${p2Name} is computer-controlled. Watch it roll automatically!`);
+    }
+
     setGameState(prev => ({
       ...prev,
       players: {
@@ -117,8 +123,9 @@ function App() {
         [PlayerId.TWO]: { ...prev.players[PlayerId.TWO], name: p2Name, avatar: p2Avatar, position: 1 },
       },
       phase: GamePhase.ROLL_DICE,
-      logs: [`Welcome to Steps & Leaps! ${p1Name} starts.`],
-      difficulty: difficulty
+      logs,
+      difficulty: difficulty,
+      vsComputer,
     }));
     audioService.playWin(); // Play a sound to start
   };
@@ -286,20 +293,39 @@ function App() {
           [PlayerId.TWO]: { ...prev.players[PlayerId.TWO], position: 1 },
       },
       difficulty: prev.difficulty,
+      vsComputer: prev.vsComputer,
       phase: GamePhase.ROLL_DICE, 
     }));
     setAiMessage(null);
     setLoadingAi(false);
     setIsAnimating(false);
-    audioService.playWin();
-    addLog("Game Reset! Good luck!");
+  audioService.playWin();
+  addLog("Game Reset! Good luck!");
   };
+
+  const currentPlayer = gameState.players[gameState.currentPlayerId];
+  const isComputerTurn = gameState.vsComputer && gameState.currentPlayerId === PlayerId.TWO && !gameState.winner;
+
+  useEffect(() => {
+    if (!isComputerTurn) return;
+    let timer: number | undefined;
+
+    if (gameState.phase === GamePhase.ROLL_DICE && !isRolling && !isAnimating) {
+      timer = window.setTimeout(() => handleRollDice(), 700);
+    } else if (gameState.phase === GamePhase.SPIN_WHEEL && !spinTrigger && !isAnimating) {
+      timer = window.setTimeout(() => handleSpin(), 900);
+    }
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [isComputerTurn, gameState.phase, isRolling, isAnimating, spinTrigger]);
 
   if (gameState.phase === GamePhase.SETUP) {
     return <SetupScreen onStartGame={handleStartGame} />;
   }
-
-  const currentPlayer = gameState.players[gameState.currentPlayerId];
 
   // Helper controls component for reuse in desktop sidebar and mobile bottom sheet
   const GameControls = ({ isMobile = false }) => {
@@ -338,10 +364,10 @@ function App() {
              )}
              <button
                 onClick={handleRollDice}
-                disabled={gameState.phase !== GamePhase.ROLL_DICE || isRolling || isAnimating}
+                disabled={gameState.phase !== GamePhase.ROLL_DICE || isRolling || isAnimating || isComputerTurn}
                 className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-300 text-white font-bold rounded-xl shadow-lg transform active:scale-95 transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
               >
-                {isRolling ? 'Rolling...' : 'Roll Dice (Steps)'}
+                {isComputerTurn ? 'Computer rolling...' : isRolling ? 'Rolling...' : 'Roll Dice (Steps)'}
               </button>
           </div>
         )}
@@ -353,16 +379,16 @@ function App() {
           <div className={`flex flex-col items-center transition-opacity duration-300 ${!isMobile && (gameState.phase !== GamePhase.SPIN_WHEEL && gameState.phase !== GamePhase.MOVING_LEAPS) ? 'opacity-30 grayscale pointer-events-none' : ''} ${isMobile ? 'flex-1' : ''}`}>
              <Spinner 
                 onSpinComplete={onSpinComplete} 
-                disabled={gameState.phase !== GamePhase.SPIN_WHEEL || isAnimating} 
+                disabled={gameState.phase !== GamePhase.SPIN_WHEEL || isAnimating || isComputerTurn} 
                 spinTrigger={spinTrigger}
                 className={isMobile ? "w-24 h-24" : "w-48 h-48"}
              />
              <button
               onClick={handleSpin}
-              disabled={gameState.phase !== GamePhase.SPIN_WHEEL || spinTrigger || isAnimating}
+              disabled={gameState.phase !== GamePhase.SPIN_WHEEL || spinTrigger || isAnimating || isComputerTurn}
               className="mt-4 w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-200 text-white font-bold rounded-xl shadow-lg transform active:scale-95 transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
             >
-              {spinTrigger ? 'Spinning...' : 'Spin (Leaps)'}
+              {isComputerTurn ? 'Computer spinning...' : spinTrigger ? 'Spinning...' : 'Spin (Leaps)'}
             </button>
           </div>
         )}
@@ -412,8 +438,14 @@ function App() {
              </button>
           </div>
           <p className="text-slate-500 text-sm">Race to {gameConfig.maxScore}!</p>
-          <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
-             Mode: {gameState.difficulty === Difficulty.EASY ? 'Easy' : 'Hard'}
+          <div className="mt-2 flex flex-wrap gap-2">
+            <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+               Mode: {gameState.difficulty === Difficulty.EASY ? 'Easy' : 'Hard'}
+            </div>
+            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+               <Gamepad2 size={14} />
+               {gameState.vsComputer ? 'Computer Opponent' : 'Two Players'}
+            </div>
           </div>
         </div>
 

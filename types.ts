@@ -35,4 +35,5 @@ export interface GameState {
   winner: PlayerId | null;
   logs: string[];
   difficulty: Difficulty;
+  vsComputer: boolean;
 }

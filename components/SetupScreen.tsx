@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { AvatarIcon, AvatarType } from './AvatarIcon';
-import { ArrowRight, Brain, Sparkles } from 'lucide-react';
+import { ArrowRight, Brain, Sparkles, Bot } from 'lucide-react';
 import { Difficulty } from '../types';
 
 interface SetupScreenProps {
-  onStartGame: (p1Name: string, p1Avatar: string, p2Name: string, p2Avatar: string, difficulty: Difficulty) => void;
+  onStartGame: (p1Name: string, p1Avatar: string, p2Name: string, p2Avatar: string, difficulty: Difficulty, vsComputer: boolean) => void;
 }
 
 const AVATAR_OPTIONS: AvatarType[] = ['axolotl', 'cat', 'dog', 'bunny', 'frog', 'panda'];
@@ -16,8 +16,14 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
     const saved = localStorage.getItem('sl_p1_avatar');
     return (saved && AVATAR_OPTIONS.includes(saved as AvatarType)) ? (saved as AvatarType) : 'axolotl';
   });
-  
-  const [p2Name, setP2Name] = useState(() => localStorage.getItem('sl_p2_name') || 'Player 2');
+
+  const [vsComputer, setVsComputer] = useState(() => localStorage.getItem('sl_vs_computer') === 'true');
+
+  const [p2Name, setP2Name] = useState(() => {
+    const saved = localStorage.getItem('sl_p2_name');
+    if (saved) return saved;
+    return localStorage.getItem('sl_vs_computer') === 'true' ? 'Computer' : 'Player 2';
+  });
   const [p2Avatar, setP2Avatar] = useState<AvatarType>(() => {
     const saved = localStorage.getItem('sl_p2_avatar');
     return (saved && AVATAR_OPTIONS.includes(saved as AvatarType)) ? (saved as AvatarType) : 'cat';
@@ -35,12 +41,19 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
     localStorage.setItem('sl_p2_name', p2Name);
     localStorage.setItem('sl_p2_avatar', p2Avatar);
     localStorage.setItem('sl_difficulty', difficulty);
-  }, [p1Name, p1Avatar, p2Name, p2Avatar, difficulty]);
+    localStorage.setItem('sl_vs_computer', vsComputer ? 'true' : 'false');
+  }, [p1Name, p1Avatar, p2Name, p2Avatar, difficulty, vsComputer]);
+
+  useEffect(() => {
+    if (vsComputer && (p2Name === 'Player 2' || p2Name.trim() === '')) {
+      setP2Name('Computer');
+    }
+  }, [vsComputer]); // Only responds to toggle changes
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (p1Name && p2Name) {
-      onStartGame(p1Name, p1Avatar, p2Name, p2Avatar, difficulty);
+      onStartGame(p1Name, p1Avatar, p2Name, p2Avatar, difficulty, vsComputer);
     }
   };
 
@@ -106,6 +119,11 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
               <div className="flex items-center gap-3 mb-4 border-b-2 border-indigo-50 pb-2">
                 <span className="bg-pink-400 text-white w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center font-black shadow-sm transform rotate-3 text-sm md:text-base">2</span>
                 <h2 className="text-xl md:text-2xl font-bold text-slate-700">Player 2</h2>
+                {vsComputer && (
+                  <span className="text-[10px] md:text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
+                    Computer
+                  </span>
+                )}
               </div>
               
               <div>
@@ -140,6 +158,51 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStartGame }) => {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className="mt-8 border-t-2 border-slate-100 pt-8">
+            <label className="block text-center text-xs md:text-sm font-bold text-slate-400 mb-4 uppercase tracking-wide">Opponent</label>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <button
+                type="button"
+                onClick={() => setVsComputer(false)}
+                className={`flex items-center gap-3 px-4 py-3 md:px-6 md:py-4 rounded-xl border-2 transition-all sm:w-64 ${
+                  !vsComputer
+                    ? 'border-blue-400 bg-blue-50 shadow-md ring-2 ring-blue-100'
+                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-400'
+                }`}
+              >
+                <div className={`p-2 rounded-full shrink-0 ${!vsComputer ? 'bg-blue-200 text-blue-700' : 'bg-slate-100'}`}>
+                  <Sparkles size={20} className="md:w-6 md:h-6" />
+                </div>
+                <div className="text-left">
+                  <div className={`font-bold text-sm md:text-base ${!vsComputer ? 'text-blue-700' : 'text-slate-600'}`}>Two Players</div>
+                  <div className="text-[10px] md:text-xs text-slate-500 font-medium mt-1">
+                    Both humans, pass-and-play
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setVsComputer(true)}
+                className={`flex items-center gap-3 px-4 py-3 md:px-6 md:py-4 rounded-xl border-2 transition-all sm:w-64 ${
+                  vsComputer
+                    ? 'border-emerald-400 bg-emerald-50 shadow-md ring-2 ring-emerald-100'
+                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-400'
+                }`}
+              >
+                <div className={`p-2 rounded-full shrink-0 ${vsComputer ? 'bg-emerald-200 text-emerald-700' : 'bg-slate-100'}`}>
+                  <Bot size={20} className="md:w-6 md:h-6" />
+                </div>
+                <div className="text-left">
+                  <div className={`font-bold text-sm md:text-base ${vsComputer ? 'text-emerald-700' : 'text-slate-600'}`}>Single Player</div>
+                  <div className="text-[10px] md:text-xs text-slate-500 font-medium mt-1">
+                    Computer auto-plays Player 2
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
 
